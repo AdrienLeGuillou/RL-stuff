@@ -166,14 +166,17 @@ env = TicTacToe()
 player1 = Player(1, 0.1, 0.1)
 player2 = Player(-1, 0.1, 0.1)
 
+# training
 for _ in range(10000):
     play_game(player1, player2, env, False)
 
+# visualize some games
 for i in range(10):
     print('game: ', i)
     play_game(player1, player2, env, True)
 
 
+# play against the agents at their best
 player1.eps = 0
 player2.eps = 0
 
