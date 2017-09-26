@@ -64,31 +64,73 @@ class Rental:
 
 env = Rental()
 
+## policy evaluation - ici le choix de la prochaine action est equiprobable
+
+# make a function that return new_values and take env as arg
+
 values = np.zeros((env.max_car, env.max_car))
 
 pois_a = poisson(env.mean_ret[0])
 pois_b = poisson(env.mean_ret[1])
 
 new_values = values.copy()
+delta = 1
+while delta > 0.1:
+    delta = 0
+    for i in range(env.max_car):
+        for j in range(env.max_car):
+            env.observation = [i, j]
+            moves = env.valid_actions()
+            value = 0
+            for m in moves:
+                i_ = i - m
+                j_ = j + m
+                # add loop for all possible rent and take it into account
+                # for the next state
+                # same for the best action
+                value += env.r_move * np.abs(m) \
+                        + env.r_rent * (
+                            min(i_, env.mean_rent[0]) \
+                            + min(j_, env.mean_rent[1]))
+
+                for k in range(env.max_car - i):
+                    for l in range(env.max_car - j):
+                        value += pois_a.pmf(k) * pois_b.pmf(l) * \
+                                 values[i+k, j+l]
+
+            value /= len(moves)
+            new_values[i,j] = value
+            delta = max(delta, np.abs(new_values[i,j] - values[i,j]))
+
+    values = new_values.copy()
+
+plt.imshow(values, cmap='hot', interpolation='nearest')
+plt.legend()
+plt.show()
+
+best_action = np.zeros((env.max_car, env.max_car))
+new_best_action = best_action.copy()
 
 for i in range(env.max_car):
     for j in range(env.max_car):
         env.observation = [i, j]
         moves = env.valid_actions()
-        value = 0
+        moves_value = []
         for m in moves:
             i_ = i - m
             j_ = j + m
-            value += env.r_move * np.abs(m) \
-                    + env.r_rent * (
-                        min(i_, env.mean_rent[0]) + min(j_, env.mean_rent[1]))
 
+            # calculate the mean over all possible next states for move m
             for k in range(env.max_car - i):
                 for l in range(env.max_car - j):
                     value += pois_a.pmf(k) * pois_b.pmf(l) * values[i+k, j+l]
 
-        value /= len(moves)
-        new_values[i,j] = value
+            moves_value.append(value)
 
-values = new_values.copy()
+        new_best_action[i, j] = moves[np.argmax(moves_value)]
 
+best_action = new_best_action.copy()
+
+plt.imshow(best_action, cmap='hot', interpolation='nearest')
+plt.legend()
+plt.show()
