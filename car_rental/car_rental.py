@@ -70,37 +70,66 @@ env = Rental()
 
 values = np.zeros((env.max_car, env.max_car))
 
-pois_a = poisson(env.mean_ret[0])
-pois_b = poisson(env.mean_ret[1])
+pois_ret = [poisson(env.mean_ret[a]) for a in range(2)]
+pois_rent =  [poisson(env.mean_rent[a]) for a in range(2)]
 
 new_values = values.copy()
 delta = 1
 while delta > 0.1:
     delta = 0
-    for i in range(env.max_car):
-        for j in range(env.max_car):
-            env.observation = [i, j]
-            moves = env.valid_actions()
-            value = 0
-            for m in moves:
-                i_ = i - m
-                j_ = j + m
-                # add loop for all possible rent and take it into account
-                # for the next state
-                # same for the best action
-                value += env.r_move * np.abs(m) \
-                        + env.r_rent * (
-                            min(i_, env.mean_rent[0]) \
-                            + min(j_, env.mean_rent[1]))
+    for i, j in np.ndindex((env.max_car, env.max_car)):
+        env.observation = [i, j]
+        moves = env.valid_actions()
+        value = 0
+        for m in moves:
+            i_ = i - m
+            j_ = j + m
+            value += env.r_move * np.abs(m)
+            # add loop for all possible rent and take it into account
+            # for the next state
+            # same for the best action
+            ###
+            # value += env.r_rent * (
+            #             min(i_, env.mean_rent[0]) \
+            #             + min(j_, env.mean_rent[1]))
 
-                for k in range(env.max_car - i):
-                    for l in range(env.max_car - j):
-                        value += pois_a.pmf(k) * pois_b.pmf(l) * \
-                                 values[i+k, j+l]
+            for r0, r1 in np.ndindex((i_, j_)):
+                i__ = i_ - r0
+                j__ = j_ - r1
+                prob = 1
+                # if r0 < i_ : prob(rent = r0) = pmf(r0)
+                # if r0 = i_ : prob(rent = r0) = cdf(r0 - 1)
+                if r0 = i_:
+                    prob *= (1 - pois_rent[0].cdf(r0 - 1))
+                else:
+                    prob *= pois_rent[0].pmf(r0)
+                # if r1 < j_ : prob(rent = r1) = pmf(r1)
+                # if r1 = j_ : prob(rent = r1) = cdf(r1 - 1)
+                if r1 = j_:
+                    prob *= (1 - pois_rent[1].cdf(r1 - 1))
+                else:
+                    prob *= pois_rent[1].pmf(r1)
 
-            value /= len(moves)
-            new_values[i,j] = value
-            delta = max(delta, np.abs(new_values[i,j] - values[i,j]))
+                value += prob * (r0 + r1) * env.r_rent
+
+                for k, l in np.ndindex((env.max_car - i__, env.max_car - j__)):
+                    prob = 1
+                    # same here. Returns get the nb of cars to env.max_car for
+                    # all values > env.max_car - i__. Hence cdf
+                    if k = env.max_car - i__:
+                        prob *= (1 - pois_ret[0].cdf(k - 1))
+                    else:
+                        prob *= pois_ret[0].pmf(k)
+                     if l = env.max_car - j__:
+                            prob *= (1 - pois_ret[1].cdf(l - 1))
+                    else:
+                        prob *= pois_ret[1].pmf(l)
+
+                    value += prob * values[i__+k, j__+l]
+
+        value /= len(moves)
+        new_values[i,j] = value
+        delta = max(delta, np.abs(new_values[i,j] - values[i,j]))
 
     values = new_values.copy()
 
@@ -123,7 +152,8 @@ for i in range(env.max_car):
             # calculate the mean over all possible next states for move m
             for k in range(env.max_car - i):
                 for l in range(env.max_car - j):
-                    value += pois_a.pmf(k) * pois_b.pmf(l) * values[i+k, j+l]
+                    value += pois_ret[0].pmf(k) * pois_ret[1].pmf(l) \
+                           * values[i+k, j+l]
 
             moves_value.append(value)
 
