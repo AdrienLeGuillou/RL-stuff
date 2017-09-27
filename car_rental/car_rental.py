@@ -61,14 +61,15 @@ class Rental:
                'returned':returned, 'rented': rented}
 
 
-def state_value_calc(env, i, j, pois_rent, pois_ret, values):
+def state_value_calc(env, i, j, gamma, pois_rent, pois_ret, values):
     env.observation = [i, j]
     moves = env.valid_actions()
     value = 0
     for m in moves:
         i_ = i - m
         j_ = j + m
-        value += env.r_move * np.abs(m)
+        reward = env.r_move * np.abs(m)
+        value = 0
 
         # i_ +1 because of python's 0 based index
         for r0, r1 in np.ndindex((i_ + 1, j_ + 1)):
@@ -106,36 +107,36 @@ def state_value_calc(env, i, j, pois_rent, pois_ret, values):
 
                 value += prob * values[i__+k, j__+l]
 
+        value = reward + gamma * value
+
     value /= len(moves)
     return value
 
-def states_value_func(env, delta_max):
-    values = np.zeros((env.max_car + 1, env.max_car + 1))
-
+def states_value_func(env, values, delta_max, n_max=100):
     pois_ret = [poisson(env.mean_ret[a]) for a in range(2)]
     pois_rent =  [poisson(env.mean_rent[a]) for a in range(2)]
 
     new_values = values.copy()
+    n = 0
     delta = 1
 
-    while delta > delta_max:
+    while delta > delta_max and n < n_max:
         delta = 0
         for i, j in np.ndindex(np.shape(values)):
-            new_values[i,j] = state_value_calc(env, i, j,
+            new_values[i,j] = state_value_calc(env, i, j, 0.9,
                                                pois_rent, pois_ret, values)
             delta = max(delta, np.abs(new_values[i,j] - values[i,j]))
 
         values = new_values.copy()
+        n += 1
+        print("Iteration number: ", n)
 
     return values
 
 env = Rental(10, 3)
 
-values = states_value_func(env, 0.1)
-
-
-
-
+values = np.zeros((env.max_car + 1, env.max_car + 1))
+values = states_value_func(env, values, 0.1, 5)
 
 ## policy evaluation - ici le choix de la prochaine action est equiprobable
 
