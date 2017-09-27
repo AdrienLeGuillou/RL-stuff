@@ -21,9 +21,9 @@ class Rental:
         self.observation = [5, 5]
 
     def valid_actions(self):
-        low = max(-1 * self.max_car + self.observation[1],
+        low = max(-1 * (self.max_car - self.observation[0]),
                   -1 * self.observation[1], -1 * self.max_move)
-        high = min(self.max_car - self.observation[0],
+        high = min(self.max_car - self.observation[1],
                    self.observation[0], self.max_move)
 
         return range(low, high + 1, 1)
@@ -68,16 +68,18 @@ env = Rental()
 
 # make a function that return new_values and take env as arg
 
-values = np.zeros((env.max_car, env.max_car))
+values = np.zeros((env.max_car + 1, env.max_car + 1))
 
 pois_ret = [poisson(env.mean_ret[a]) for a in range(2)]
 pois_rent =  [poisson(env.mean_rent[a]) for a in range(2)]
 
 new_values = values.copy()
 delta = 1
+
 while delta > 0.1:
     delta = 0
-    for i, j in np.ndindex((env.max_car, env.max_car)):
+    # i want a 21 by 21 matrix. There can be 0 cars and 20 cars
+    for i, j in np.ndindex(np.shape(values)):
         env.observation = [i, j]
         moves = env.valid_actions()
         value = 0
@@ -85,43 +87,43 @@ while delta > 0.1:
             i_ = i - m
             j_ = j + m
             value += env.r_move * np.abs(m)
-            # add loop for all possible rent and take it into account
-            # for the next state
-            # same for the best action
-            ###
-            # value += env.r_rent * (
-            #             min(i_, env.mean_rent[0]) \
-            #             + min(j_, env.mean_rent[1]))
 
-            for r0, r1 in np.ndindex((i_, j_)):
+            # i_ +1 because of python's 0 based index
+            for r0, r1 in np.ndindex((i_ + 1, j_ + 1)):
                 i__ = i_ - r0
                 j__ = j_ - r1
                 prob = 1
                 # if r0 < i_ : prob(rent = r0) = pmf(r0)
                 # if r0 = i_ : prob(rent = r0) = cdf(r0 - 1)
-                if r0 = i_:
+                if r0 == i_:
                     prob *= (1 - pois_rent[0].cdf(r0 - 1))
                 else:
                     prob *= pois_rent[0].pmf(r0)
                 # if r1 < j_ : prob(rent = r1) = pmf(r1)
                 # if r1 = j_ : prob(rent = r1) = cdf(r1 - 1)
-                if r1 = j_:
+                if r1 == j_:
                     prob *= (1 - pois_rent[1].cdf(r1 - 1))
                 else:
                     prob *= pois_rent[1].pmf(r1)
 
                 value += prob * (r0 + r1) * env.r_rent
 
-                for k, l in np.ndindex((env.max_car - i__, env.max_car - j__)):
+
+                if j__ > 20 or i__ > 20:
+                    print(i, j, i_, j_, i__, j__, m, r0, r1)
+
+
+                for k, l in np.ndindex((env.max_car - i__ + 1,
+                                        env.max_car - j__ + 1)):
                     prob = 1
                     # same here. Returns get the nb of cars to env.max_car for
                     # all values > env.max_car - i__. Hence cdf
-                    if k = env.max_car - i__:
+                    if k == env.max_car - i__:
                         prob *= (1 - pois_ret[0].cdf(k - 1))
                     else:
                         prob *= pois_ret[0].pmf(k)
-                     if l = env.max_car - j__:
-                            prob *= (1 - pois_ret[1].cdf(l - 1))
+                    if l == env.max_car - j__:
+                        prob *= (1 - pois_ret[1].cdf(l - 1))
                     else:
                         prob *= pois_ret[1].pmf(l)
 
