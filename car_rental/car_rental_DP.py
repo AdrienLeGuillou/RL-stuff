@@ -171,8 +171,8 @@ def initialize(env):
 env = Rental()
 
 # estimated reward for transitioning from s through a to s'
-print("Computing the states action states transition \
-       rewards and probabilities")
+print("Computing the states action states transition ",  \
+       "rewards and probabilities")
 r_sas, p_sas = get_transition_rewards_probs(env)
 
 print("Initializing the policy and the states values")
@@ -186,7 +186,7 @@ while True:
     # check if improve policy returns True (stable policy) then stop
     print("Improving the policy")
     if improve_policy(env, policy, state_value, r_sas, p_sas) and n < 10:
-        if n >-= 10:
+        if n >= 10:
             print("Too many iterations. Stopping")
         else:
             print("The policy is now stable")
