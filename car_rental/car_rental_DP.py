@@ -186,7 +186,7 @@ while True:
     # check if improve policy returns True (stable policy) then stop
     print("Improving the policy")
     if improve_policy(env, policy, state_value, r_sas, p_sas) and n < 10:
-        if n >-= 10:
+        if n >= 10:
             print("Too many iterations. Stopping")
         else:
             print("The policy is now stable")
