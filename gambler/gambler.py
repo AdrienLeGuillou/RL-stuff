@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Gambler:
     def __init__(self, prob_head):
@@ -37,7 +38,7 @@ class Gambler:
         return self.observation, reward, done, {
                'ph':self.prob_head, 'p': p}
 
-env = Gambler(0.25)
+env = Gambler(0.55)
 
 values = np.zeros(101)
 values[100] = 1
@@ -61,3 +62,5 @@ while delta > 0.1 and n < 100:
         values[s] = max_val
     n += 1
 
+plt.plot(policy)
+plt.show()
