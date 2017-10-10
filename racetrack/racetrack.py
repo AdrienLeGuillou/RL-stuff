@@ -1,4 +1,6 @@
 import numpy as np
+import pickle
+import matplotlib.pyplot as plt
 
 class RaceTrack:
     def __init__(self, course):
@@ -18,7 +20,7 @@ class RaceTrack:
 
     def reset(self):
         s = np.random.randint(0, len(self.starts))
-        self.position =self.starts[s]
+        self.position = self.starts[s].copy()
         self.velocity = np.array([1, 0])
 
     def valid_actions(self):
@@ -62,9 +64,13 @@ class RaceTrack:
     def print_state(self):
         state = self.course.copy()
         state[self.position[0], self.position[1]] = 5
-        print(np.array2string(state))
+        #print(np.array2string(state))
+        plt.imshow(state, cmap='hot')
+        plt.show()
+
 
 class Agent:
+
     def __init__(self, env):
         self.env = env
         self.gamma = 0.9
@@ -73,18 +79,18 @@ class Agent:
 
     def reset(self):
         self.Q = np.zeros((np.prod(np.shape(self.env.course)),
-                            self.env.v_max**2, 9))
+                            (self.env.v_max + 1)**2, 9))
         self.N = np.zeros((np.prod(np.shape(self.env.course)),
-                            self.env.v_max**2, 9))
+                            (self.env.v_max + 1)**2, 9))
         self.D = np.zeros((np.prod(np.shape(self.env.course)),
-                            self.env.v_max**2, 9))
-        self.pi = np.zeros((np.prod(np.shape(self.env.course)),
-                            self.env.v_max**2))
+                            (self.env.v_max + 1)**2, 9))
+        self.pi = np.ones((np.prod(np.shape(self.env.course)),
+                            (self.env.v_max + 1)**2), dtype='int') * 8
         self._update_mu()
 
     def _update_mu(self):
         self.mu = np.ones((np.prod(np.shape(self.env.course)),
-                            self.env.v_max**2, 9))
+                            (self.env.v_max + 1)**2, 9))
         self.mu *= self.epsilon / 9
         for i, j in np.ndindex(np.shape(self.mu)[0:2]):
             self.mu[i, j, int(self.pi[i, j])] += 1 - self.epsilon
@@ -129,7 +135,7 @@ class Agent:
         obs[1] = self._velocity_from_hash(state[1])
         return obs
 
-    def _generate_episode(self):
+    def _generate_episode(self, greedy=False):
         done = False
         self.env.reset()
         obs = self.env.get_observation()
@@ -139,7 +145,10 @@ class Agent:
         while not done:
             s = self._obs_to_state(obs)
             states.append(s)
-            a = np.random.choice(range(9), p=self.mu[s[0], s[1]])
+            if not greedy:
+                a = np.random.choice(range(9), p=self.mu[s[0], s[1]])
+            else:
+                a = self.pi[s[0], s[1]]
             actions.append(a)
             a = self._action_from_hash(a)
 
@@ -151,24 +160,81 @@ class Agent:
 
         return states, actions, rewards
 
-    def _get_last_greedy(self):
-        pass
+    def _get_last_non_greedy(self, s, a):
+        # remove terminal state
+        s = s[:-1]
 
-    def _update_Q(self):
-        pass
+        for i in reversed(range(len(s))):
+            if self.pi[s[i][0], s[i][1]] != a[i]:
+                return i
+        # if the episode follows pi all along return the terminal state index
+        return len(s) + 1
+
+    def _update_Q(self, s, a, r, tau):
+        sa = list(zip(s[tau:-1], a[tau:]))
+        unique_sa = set([(s[0][0], s[0][1], s[1]) for s in sa])
+
+        # we want r1 for s0a0 but because there is no r0 in r : r[0] = r1
+        r = r[tau:]
+
+        for elt in unique_sa:
+            i = sa.index(([elt[0], elt[1]], elt[2]))
+            Gi = np.sum([r[i + x] * self.epsilon**x \
+                         for x in range(len(sa) - i)])
+
+            # W = np.prod([1 / self.mu[sa[j][0][0], sa[j][0][1], sa[j][1]]
+            #              for j in range(i + 1, len(sa))])
+            W = (1 / (1 - self.epsilon + (self.epsilon / 9)))**(len(sa)-(i+1))
+
+            self.N[sa[i][0][0], sa[i][0][1], sa[i][1]] += W * Gi
+            self.D[sa[i][0][0], sa[i][0][1], sa[i][1]] += W
+            self.Q[sa[i][0][0], sa[i][0][1], sa[i][1]] = \
+                               self.N[sa[i][0][0], sa[i][0][1], sa[i][1]] \
+                             / self.D[sa[i][0][0], sa[i][0][1], sa[i][1]]
 
     def _update_policies(self):
-        pass
+        for p, v in np.ndindex(np.shape(self.pi)):
+            self.pi[p, v] = np.argmax(self.Q[p, v])
 
-    def train(self, n):
+        self._update_mu()
+
+    def _print_episode(self, s):
+        state = self.env.course.copy()
+        pos = [p[0] for p in s]
+        pos = [self._position_from_hash(p) for p in pos]
+        for p in pos:
+            state[p[0], p[1]] = 5
+        #print(np.array2string(state))
+        plt.imshow(state, cmap='hot')
+        plt.show()
+
+    def play(self, n, display=False):
         for _ in range(n):
-            self._generate_episode()
-            self._get_last_greedy()
-            self._update_Q()
+            s, a, r = self._generate_episode(True)
+
+            if display:
+                self._print_episode(s)
+
+    def train(self, n, display=False):
+        for _ in range(n):
+            s, a, r = self._generate_episode()
+            tau = self._get_last_non_greedy(s, a)
+            if tau == len(s):
+                pass
+            self._update_Q(s, a, r, tau)
             self._update_policies()
+
+            if display:
+                self._print_episode(s)
 
             # test greedy policy
             # break if victory
+            # s, a, r = self._generate_episode(True)
+            # if r > -1000:
+            #     break
+
+
+
 
 course = np.array([
     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -208,4 +274,16 @@ course = np.array([
 env = RaceTrack(course)
 player = Agent(env)
 
-#player.train(100000)
+# with open('racetrack/player.pickle', 'rb') as f:
+#     pickle.load(f)
+
+player.train(100)
+
+player.play(4, True)
+
+
+with open('racetrack/player.pickle', 'wb') as f:
+    pickle.dump(player, f)
+
+
+
