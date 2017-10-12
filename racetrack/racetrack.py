@@ -186,11 +186,10 @@ class Agent:
             #              for j in range(i + 1, len(sa))])
             W = (1 / (1 - self.epsilon + (self.epsilon / 9)))**(len(sa)-(i+1))
 
-            self.N[sa[i][0][0], sa[i][0][1], sa[i][1]] += W * Gi
-            self.D[sa[i][0][0], sa[i][0][1], sa[i][1]] += W
-            self.Q[sa[i][0][0], sa[i][0][1], sa[i][1]] = \
-                               self.N[sa[i][0][0], sa[i][0][1], sa[i][1]] \
-                             / self.D[sa[i][0][0], sa[i][0][1], sa[i][1]]
+            self.N[sa[i][0][0], sa[i][0][1], sa[i][1]] += W
+            c = self.N[sa[i][0][0], sa[i][0][1], sa[i][1]]
+            temp = self.Q[sa[i][0][0], sa[i][0][1], sa[i][1]]
+            self.Q[sa[i][0][0], sa[i][0][1], sa[i][1]] += W / c * (Gi - temp)
 
     def _update_policies(self):
         for p, v in np.ndindex(np.shape(self.pi)):
@@ -277,7 +276,7 @@ player = Agent(env)
 # with open('racetrack/player.pickle', 'rb') as f:
 #     pickle.load(f)
 
-player.train(100)
+player.train(10000)
 
 player.play(4, True)
 
