@@ -276,7 +276,7 @@ player = Agent(env)
 # with open('racetrack/player.pickle', 'rb') as f:
 #     pickle.load(f)
 
-player.train(10000)
+player.train(1000)
 
 player.play(4, True)
 
