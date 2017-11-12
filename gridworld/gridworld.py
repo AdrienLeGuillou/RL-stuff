@@ -34,6 +34,7 @@ class Gridworld:
 
     def reset(self):
         self.position = random.choice(self.starts)
+        return self.position
 
     def _is_wall(self, pos):
         return pos in self.walls
