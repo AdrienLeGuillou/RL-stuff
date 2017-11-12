@@ -1,5 +1,6 @@
 import numpy as np
 from gridworld.gridworld import Gridworld
+import matplotlib.pyplot as plt
 
 class Agent:
     def __init__(self, env, algo="sarsa", tr=0.9, lr=0.1, dr=0.9, eps=0.1):
@@ -25,6 +26,10 @@ class Agent:
     def _algo(self, algo):
         if algo == "sarsa":
             self._ep_train = self._train_sarsa
+        elif algo == "sarsa1":
+            self._ep_train = self._train_sarsa1
+        elif algo == "Q1":
+            self._ep_train = self._train_Q1
 
     def _pick_action(self, s, greedy=False):
         if greedy:
@@ -42,7 +47,7 @@ class Agent:
     def _action_from_a(self, a):
         return self.A[a]
 
-    def play(self, n=1, greedy=False):
+    def play(self, n=1, greedy=False, display=False):
         l_steps = []
         while n > 0:
             steps = 0
@@ -58,11 +63,13 @@ class Agent:
                 a = self._pick_action(s, greedy)
                 steps += 1
 
+            if display:
+                self.env.render()
+
             l_steps.append(steps)
             n -= 1
 
         return l_steps
-
 
     def train(self, n=1):
         l_steps = []
@@ -71,7 +78,6 @@ class Agent:
             n -= 1
 
         return l_steps
-
 
     def _train_sarsa(self):
         Z = np.zeros((len(self.S), len(self.A)))
@@ -98,7 +104,48 @@ class Agent:
 
         return steps
 
+    def _train_sarsa1(self):
+        done = False
+        steps = 0
 
+        s = self.env.reset()
+        s = self._s_from_state(s)
+        a = self._pick_action(s)
+
+        while not done:
+            s_, r, done = self.env.step(self._action_from_a(a))
+            s_ = self._s_from_state(s_)
+            a_ = self._pick_action(s_)
+            delta = r + self.dr * self.Q[s_, a_] - self.Q[s, a]
+
+            self.Q[s,a] += self.lr * delta
+            s, a = s_, a_
+
+            steps += 1
+
+        return steps
+
+    def _train_Q1(self):
+        done = False
+        steps = 0
+
+        s = self.env.reset()
+        s = self._s_from_state(s)
+        a = self._pick_action(s)
+
+        while not done:
+            s_, r, done = self.env.step(self._action_from_a(a))
+            s_ = self._s_from_state(s_)
+            a_ = self._pick_action(s_)
+            a_max = self._pick_action(s_, greedy=True)
+            delta = r + self.dr * self.Q[s_, a_max] - self.Q[s, a]
+
+            self.Q[s,a] += self.lr * delta
+            s, a = s_, a_
+
+            steps += 1
+
+        return steps
 
 world = np.array([
     [0, 0, 0, 1, 1, 1, 2, 2, 1, 0],
@@ -110,10 +157,37 @@ world = np.array([
     [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]
 ])
 
+world_hard = np.array([
+    [0, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [0, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [7, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [0, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 0, 0, 0, 0, 0],
+    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 0, 0, 0, 0, 0],
+    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 0, 0, 0, 0, 0],
+    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 8, 0, 0],
+    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
+    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0]
+])
 
-env = Gridworld(world, (1, 0))
 
-bot = Agent(env)
+env = Gridworld(world_hard, (-1, 0))
 
-bot.train(1000)
-bot.play(greedy=True)
+bot = Agent(env, algo="Q1")
+
+ep_step = bot.train(10000)
+
+plt.plot(range(len(ep_step)), ep_step)
+plt.yscale('log')
+plt.xscale('log')
+plt.show()
+
+
+# bot.play(greedy=True, display=True)

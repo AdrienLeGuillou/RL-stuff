@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import matplotlib.pyplot as plt
 
 class Gridworld:
     """
@@ -34,6 +35,7 @@ class Gridworld:
 
     def reset(self):
         self.position = random.choice(self.starts)
+        self.position_memory = [self.position]
         return self.position
 
     def _is_wall(self, pos):
@@ -77,7 +79,18 @@ class Gridworld:
         if self.position == self.end:
             done = True
 
+        self.position_memory.append(self.position)
+
         return self.position, reward, done
+
+    def render(self):
+        state = np.flipud(self.world.copy())
+        for p in self.position_memory:
+            state[p[0], p[1]] = 4
+        state[self.end[0], self.end[1]] = 8
+
+        plt.imshow(state, cmap='hot')
+        plt.show()
 
 world = np.array([
     [0, 0, 0 , 1, 1, 1, 2, 2, 1, 0],
