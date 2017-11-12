@@ -1,6 +1,7 @@
 import numpy as np
 from gridworld.gridworld import Gridworld
 import matplotlib.pyplot as plt
+from scipy.signal import savgol_filter
 
 class Agent:
     def __init__(self, env, algo="sarsa", tr=0.9, lr=0.1, dr=0.9, eps=0.1):
@@ -30,6 +31,10 @@ class Agent:
             self._ep_train = self._train_sarsa1
         elif algo == "Q1":
             self._ep_train = self._train_Q1
+        elif algo == "naiveQ":
+            self._ep_train = self._train_naiveQ
+        elif algo == "watkinsQ":
+            self._ep_train = self._train_watkinsQ
 
     def _pick_action(self, s, greedy=False):
         if greedy:
@@ -147,6 +152,61 @@ class Agent:
 
         return steps
 
+    def _train_naiveQ(self):
+        Z = np.zeros((len(self.S), len(self.A)))
+        done = False
+        steps = 0
+
+        s = self.env.reset()
+        s = self._s_from_state(s)
+        a = self._pick_action(s)
+
+        while not done:
+            s_, r, done = self.env.step(self._action_from_a(a))
+            s_ = self._s_from_state(s_)
+            a_ = self._pick_action(s_)
+            a_max = self._pick_action(s_, greedy=True)
+            delta = r + self.dr * self.Q[s_, a_max] - self.Q[s, a]
+            Z[s, a] = min(Z[s, a] + 1, 1)
+
+            self.Q += self.lr * delta * Z
+            Z *= self.dr * self.tr
+
+            s, a = s_, a_
+
+            steps += 1
+
+        return steps
+
+    def _train_watkinsQ(self):
+        Z = np.zeros((len(self.S), len(self.A)))
+        done = False
+        steps = 0
+
+        s = self.env.reset()
+        s = self._s_from_state(s)
+        a = self._pick_action(s)
+
+        while not done:
+            s_, r, done = self.env.step(self._action_from_a(a))
+            s_ = self._s_from_state(s_)
+            a_ = self._pick_action(s_)
+            a_max = self._pick_action(s_, greedy=True)
+            delta = r + self.dr * self.Q[s_, a_max] - self.Q[s, a]
+            Z[s, a] = min(Z[s, a] + 1, 1)
+
+            self.Q += self.lr * delta * Z
+            if a_ == a_max:
+                Z *= self.dr * self.tr
+            else:
+                Z *= 0
+
+            s, a = s_, a_
+
+            steps += 1
+
+        return steps
+
 world = np.array([
     [0, 0, 0, 1, 1, 1, 2, 2, 1, 0],
     [0, 0, 0, 1, 1, 1, 2, 2, 1, 0],
@@ -177,17 +237,18 @@ world_hard = np.array([
     [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0]
 ])
 
-
 env = Gridworld(world_hard, (-1, 0))
 
-bot = Agent(env, algo="Q1")
+bot = Agent(env, algo="naiveQ")
 
-ep_step = bot.train(10000)
+ep_step = bot.train(200)
 
-plt.plot(range(len(ep_step)), ep_step)
+plt.plot(ep_step)
+plt.plot(savgol_filter(ep_step, 55, 1, mode='nearest'))
+plt.axhline(1000, c='red')
+plt.axhline(100, c='green')
 plt.yscale('log')
 plt.xscale('log')
 plt.show()
 
-
-# bot.play(greedy=True, display=True)
+bot.play(5, greedy=True, display=True)
