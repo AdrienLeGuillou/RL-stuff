@@ -1,7 +1,4 @@
 import numpy as np
-from gridworld.gridworld import Gridworld
-import matplotlib.pyplot as plt
-from scipy.signal import savgol_filter
 
 class Agent:
     def __init__(self, env, algo="sarsa", tr=0.9, lr=0.1, dr=0.9, eps=0.1):
@@ -18,6 +15,7 @@ class Agent:
         self.eps = eps
         self.A = self.env.valid_actions()
         self.S = self.env.valid_states()
+        self.algo = algo
         self._algo(algo)
         self._reset()
 
@@ -222,50 +220,3 @@ class Agent:
             n -= 1
 
         return steps, done
-
-world = np.array([
-    [0, 0, 0, 1, 1, 1, 2, 2, 1, 0],
-    [0, 0, 0, 1, 1, 1, 2, 2, 1, 0],
-    [0, 0, 0, 9, 9, 1, 2, 2, 1, 0],
-    [7, 0, 0, 9, 9, 1, 2, 8, 1, 0],
-    [0, 0, 0, 9, 9, 1, 2, 2, 1, 0],
-    [0, 0, 0, 1, 1, 1, 2, 2, 1, 0],
-    [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]
-])
-
-world_hard = np.array([
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [7, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 0, 0, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 0, 0, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 0, 0, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 8, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0]
-])
-
-env = Gridworld(world_hard, (-1, 0), 100)
-
-bot = Agent(env, algo="sarsa")
-
-ep_step = bot.train(1000000)
-
-
-plt.plot(ep_step)
-plt.plot(savgol_filter(ep_step, 55, 1, mode='nearest'))
-plt.axhline(10 * env.target, c='red')
-plt.axhline(env.target, c='green')
-plt.yscale('log')
-# plt.xscale('log')
-plt.show()
-
-bot.play(greedy=True, display=True)

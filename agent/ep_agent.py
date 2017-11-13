@@ -18,6 +18,7 @@ class Agent:
         self.eps = eps
         self.A = self.env.valid_actions()
         self.S = self.env.valid_states()
+        self.algo = algo
         self._algo(algo)
         self._reset()
 
@@ -52,11 +53,9 @@ class Agent:
     def _action_from_a(self, a):
         return self.A[a]
 
-    def play(self, n=-1, greedy=False, display=False):
-        if n < 0:
-            n = self.env.target * 2
+    def play(self, n=1, greedy=False, display=False):
         l_steps = []
-        while True:
+        while n > 0:
             steps = 0
 
             s = self.env.reset()
@@ -64,38 +63,29 @@ class Agent:
             a = self._pick_action(s)
             done = False
 
-            while not done and n > 0:
+            while not done and steps < self.env.target * 10:
                 s, r, done = self.env.step(self._action_from_a(a))
                 s = self._s_from_state(s)
                 a = self._pick_action(s, greedy)
                 steps += 1
-                n -= 1
 
             if done:
-                l_steps.append(steps)
                 if display:
-                   self.env.render()
-            else:
-                break
-
-        return l_steps
-
-    def train(self, n=-1):
-        if n < 0:
-            n = self.env.target * 10000
-        l_steps = []
-        while True:
-            steps, done = self._ep_train(n)
-            n -= steps
-
-            if done:
+                    self.env.render()
                 l_steps.append(steps)
-            else:
-                break
+            n -= 1
 
         return l_steps
 
-    def _train_sarsa(self, n):
+    def train(self, n=1):
+        l_steps = []
+        while n > 0:
+            l_steps.append(self._ep_train())
+            n -= 1
+
+        return l_steps
+
+    def _train_sarsa(self):
         Z = np.zeros((len(self.S), len(self.A)))
         done = False
         steps = 0
@@ -104,7 +94,7 @@ class Agent:
         s = self._s_from_state(s)
         a = self._pick_action(s)
 
-        while not done and n > 0:
+        while not done:
             s_, r, done = self.env.step(self._action_from_a(a))
             s_ = self._s_from_state(s_)
             a_ = self._pick_action(s_)
@@ -117,11 +107,10 @@ class Agent:
             s, a = s_, a_
 
             steps += 1
-            n -= 1
 
-        return steps, done
+        return steps
 
-    def _train_sarsa1(self, n):
+    def _train_sarsa1(self):
         done = False
         steps = 0
 
@@ -129,7 +118,7 @@ class Agent:
         s = self._s_from_state(s)
         a = self._pick_action(s)
 
-        while not done and n > 0:
+        while not done:
             s_, r, done = self.env.step(self._action_from_a(a))
             s_ = self._s_from_state(s_)
             a_ = self._pick_action(s_)
@@ -139,11 +128,10 @@ class Agent:
             s, a = s_, a_
 
             steps += 1
-            n -= 1
 
-        return steps, done
+        return steps
 
-    def _train_Q1(self, n):
+    def _train_Q1(self):
         done = False
         steps = 0
 
@@ -151,7 +139,7 @@ class Agent:
         s = self._s_from_state(s)
         a = self._pick_action(s)
 
-        while not done and n > 0:
+        while not done:
             s_, r, done = self.env.step(self._action_from_a(a))
             s_ = self._s_from_state(s_)
             a_ = self._pick_action(s_)
@@ -162,11 +150,10 @@ class Agent:
             s, a = s_, a_
 
             steps += 1
-            n -= 1
 
-        return steps, done
+        return steps
 
-    def _train_naiveQ(self, n):
+    def _train_naiveQ(self):
         Z = np.zeros((len(self.S), len(self.A)))
         done = False
         steps = 0
@@ -175,7 +162,7 @@ class Agent:
         s = self._s_from_state(s)
         a = self._pick_action(s)
 
-        while not done and n > 0:
+        while not done:
             s_, r, done = self.env.step(self._action_from_a(a))
             s_ = self._s_from_state(s_)
             a_ = self._pick_action(s_)
@@ -189,11 +176,10 @@ class Agent:
             s, a = s_, a_
 
             steps += 1
-            n -= 1
 
-        return steps, done
+        return steps
 
-    def _train_watkinsQ(self, n):
+    def _train_watkinsQ(self):
         Z = np.zeros((len(self.S), len(self.A)))
         done = False
         steps = 0
@@ -202,7 +188,7 @@ class Agent:
         s = self._s_from_state(s)
         a = self._pick_action(s)
 
-        while not done and n > 0:
+        while not done:
             s_, r, done = self.env.step(self._action_from_a(a))
             s_ = self._s_from_state(s_)
             a_ = self._pick_action(s_)
@@ -219,53 +205,5 @@ class Agent:
             s, a = s_, a_
 
             steps += 1
-            n -= 1
 
-        return steps, done
-
-world = np.array([
-    [0, 0, 0, 1, 1, 1, 2, 2, 1, 0],
-    [0, 0, 0, 1, 1, 1, 2, 2, 1, 0],
-    [0, 0, 0, 9, 9, 1, 2, 2, 1, 0],
-    [7, 0, 0, 9, 9, 1, 2, 8, 1, 0],
-    [0, 0, 0, 9, 9, 1, 2, 2, 1, 0],
-    [0, 0, 0, 1, 1, 1, 2, 2, 1, 0],
-    [0, 0, 0, 1, 1, 1, 2, 2, 1, 0]
-])
-
-world_hard = np.array([
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [7, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 0, 0, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 9, 9, 9, 1, 1, 1, 9, 9, 0, 2, 2, 2, 0, 0, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 0, 0, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 0, 0, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 8, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0],
-    [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0]
-])
-
-env = Gridworld(world_hard, (-1, 0), 100)
-
-bot = Agent(env, algo="sarsa")
-
-ep_step = bot.train(1000000)
-
-
-plt.plot(ep_step)
-plt.plot(savgol_filter(ep_step, 55, 1, mode='nearest'))
-plt.axhline(10 * env.target, c='red')
-plt.axhline(env.target, c='green')
-plt.yscale('log')
-# plt.xscale('log')
-plt.show()
-
-bot.play(greedy=True, display=True)
+        return steps
