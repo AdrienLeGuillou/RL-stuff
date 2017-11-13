@@ -13,9 +13,10 @@ class Gridworld:
         0-5 for the wind intensity
     The agent can go in all 9 direction (-1,-1) to (1,1)
     """
-    def __init__(self, world, wind_dir):
+    def __init__(self, world, wind_dir, target=100):
         self.wind_dir = wind_dir
         self._set_world(world)
+        self.target = target
 
     def _set_world(self, world):
         self.world = np.flipud(world)

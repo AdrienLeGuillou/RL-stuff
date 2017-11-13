@@ -237,18 +237,18 @@ world_hard = np.array([
     [0, 1, 1, 2, 2, 2, 1, 1, 1, 9, 9, 0, 2, 2, 2, 9, 9, 0, 0, 0]
 ])
 
-env = Gridworld(world_hard, (-1, 0))
+env = Gridworld(world_hard, (-1, 0), 100)
 
-bot = Agent(env, algo="naiveQ")
+bot = Agent(env, algo="sarsa")
 
 ep_step = bot.train(200)
 
 plt.plot(ep_step)
 plt.plot(savgol_filter(ep_step, 55, 1, mode='nearest'))
-plt.axhline(1000, c='red')
-plt.axhline(100, c='green')
+plt.axhline(10 * env.target, c='red')
+plt.axhline(env.target, c='green')
 plt.yscale('log')
-plt.xscale('log')
+# plt.xscale('log')
 plt.show()
 
 bot.play(5, greedy=True, display=True)
