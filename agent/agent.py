@@ -52,9 +52,11 @@ class Agent:
     def _action_from_a(self, a):
         return self.A[a]
 
-    def play(self, n=1, greedy=False, display=False):
+    def play(self, n=-1, greedy=False, display=False):
+        if n < 0:
+            n = self.env.target * 2
         l_steps = []
-        while n > 0:
+        while True:
             steps = 0
 
             s = self.env.reset()
@@ -62,17 +64,19 @@ class Agent:
             a = self._pick_action(s)
             done = False
 
-            while not done:
+            while not done and n > 0:
                 s, r, done = self.env.step(self._action_from_a(a))
                 s = self._s_from_state(s)
                 a = self._pick_action(s, greedy)
                 steps += 1
+                n -= 1
 
-            if display:
-                self.env.render()
-
-            l_steps.append(steps)
-            n -= 1
+            if done:
+                l_steps.append(steps)
+                if display:
+                   self.env.render()
+            else:
+                break
 
         return l_steps
 
@@ -243,6 +247,7 @@ bot = Agent(env, algo="sarsa")
 
 ep_step = bot.train(200)
 
+
 plt.plot(ep_step)
 plt.plot(savgol_filter(ep_step, 55, 1, mode='nearest'))
 plt.axhline(10 * env.target, c='red')
@@ -251,4 +256,4 @@ plt.yscale('log')
 # plt.xscale('log')
 plt.show()
 
-bot.play(5, greedy=True, display=True)
+bot.play(greedy=True, display=True)
