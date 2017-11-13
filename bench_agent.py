@@ -42,7 +42,6 @@ bot = Agent(env, algo="sarsa")
 
 # ep_step = bot.train(2000)
 
-
 # plt.plot(ep_step)
 # plt.plot(savgol_filter(ep_step, 55, 1, mode='nearest'))
 # plt.axhline(10 * env.target, c='red')
@@ -88,5 +87,22 @@ def bench_algo(bot, n_ep=100):
 
     return result
 
-r = bench_algo(bot)
+algs = ['sarsa', 'naiveQ', 'watkinsQ']
+algs1 = ['sarsa1', 'Q1']
+tr = [0, 0.7, 0.8, 0.9, 1]
+lr = [0.1, 0.2, 0.4, 0.6, 0.8]
+eps = [0.1, 0.2]
 
+bench = None
+for a in algs:
+    for t in tr:
+        for l in lr:
+            for e in eps:
+                bot = Agent(env, algo=a, tr=t, lr=l, eps=e)
+                r = pd.DataFrame(bench_algo(bot), index=[0])
+                bench = pd.concat([bench, r])
+
+for a in algs1:
+    bot = Agent(env, algo=a)
+    r = pd.DataFrame(bench_algo(bot), index=[0])
+    bench = pd.concat([bench, r])
