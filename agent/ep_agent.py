@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 
 class Agent:
-    def __init__(self, env, algo="sarsa", tr=0.9, lr=0.1, dr=0.9, eps=0.1):
+    def __init__(self, env, algo="sarsa",
+                 tr=0.9, lr=0.1, dr=0.9, eps=0.1, replace_tr=True):
         """
         tr = trace
         lr = learning rate
@@ -18,6 +19,7 @@ class Agent:
         self.eps = eps
         self.A = self.env.valid_actions()
         self.S = self.env.valid_states()
+        self.replace_tr = replace_tr
         self.algo = algo
         self._algo(algo)
         self._reset()
@@ -99,7 +101,9 @@ class Agent:
             s_ = self._s_from_state(s_)
             a_ = self._pick_action(s_)
             delta = r + self.dr * self.Q[s_, a_] - self.Q[s, a]
-            Z[s, a] = min(Z[s, a] + 1, 1)
+            Z[s, a] = Z[s, a] + 1
+            if self.replace_tr:
+                Z[s, a] = min(Z[s, a], 1)
 
             self.Q += self.lr * delta * Z
             Z *= self.dr * self.tr
@@ -168,7 +172,9 @@ class Agent:
             a_ = self._pick_action(s_)
             a_max = self._pick_action(s_, greedy=True)
             delta = r + self.dr * self.Q[s_, a_max] - self.Q[s, a]
-            Z[s, a] = min(Z[s, a] + 1, 1)
+            Z[s, a] = Z[s, a] + 1
+            if self.replace_tr:
+                Z[s, a] = min(Z[s, a], 1)
 
             self.Q += self.lr * delta * Z
             Z *= self.dr * self.tr
@@ -194,7 +200,9 @@ class Agent:
             a_ = self._pick_action(s_)
             a_max = self._pick_action(s_, greedy=True)
             delta = r + self.dr * self.Q[s_, a_max] - self.Q[s, a]
-            Z[s, a] = min(Z[s, a] + 1, 1)
+            Z[s, a] = Z[s, a] + 1
+            if self.replace_tr:
+                Z[s, a] = min(Z[s, a], 1)
 
             self.Q += self.lr * delta * Z
             if a_ == a_max:

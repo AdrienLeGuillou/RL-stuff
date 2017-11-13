@@ -61,7 +61,8 @@ def bench_algo(bot, n_ep=100):
         'algo': bot.algo,
         'lr' : bot.lr,
         'tr' : bot.tr,
-        'eps' : bot.eps
+        'eps' : bot.eps,
+        'replacinge_trace': bot.replace_tr
     }
 
     while True:
@@ -92,15 +93,17 @@ algs1 = ['sarsa1', 'Q1']
 tr = [0, 0.7, 0.8, 0.9, 1]
 lr = [0.1, 0.2, 0.4, 0.6, 0.8]
 eps = [0.1, 0.2]
+replace = [True, False]
 
 bench = None
 for a in algs:
     for t in tr:
         for l in lr:
             for e in eps:
-                bot = Agent(env, algo=a, tr=t, lr=l, eps=e)
-                r = pd.DataFrame(bench_algo(bot), index=[0])
-                bench = pd.concat([bench, r])
+                for rtr in replace:
+                    bot = Agent(env, algo=a, tr=t, lr=l, eps=e, replace_tr=rtr)
+                    r = pd.DataFrame(bench_algo(bot), index=[0])
+                    bench = pd.concat([bench, r])
 
 for a in algs1:
     bot = Agent(env, algo=a)
