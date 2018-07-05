@@ -25,8 +25,8 @@ class DQNAgent:
     def _build_model(self):
         model = Sequential()
 
-        model.add(Dense(24, activation='relu', input_dim=self.state_size))
-        model.add(Dense(24, activation='relu'))
+        model.add(Dense(36, activation='relu', input_dim=self.state_size))
+        model.add(Dense(36, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
 
         model.compile(loss='mse',
@@ -72,6 +72,7 @@ if __name__ == "__main__":
     episodes = 500
     # initialize gym environment and the agent
     env = gym.make('CartPole-v0')
+
     agent = DQNAgent(4, 2)
     # Iterate the game
     for e in range(episodes):
@@ -103,3 +104,32 @@ if __name__ == "__main__":
                 break
         # train the agent with the experience of the episode
         agent.replay(32)
+
+
+env = gym.make('CartPole-v0')
+env = gym.wrappers.Monitor(env, 'tmp/cartpole-experiment-1', force=True)
+agent.epsilon = 0
+
+state = env.reset()
+state = np.reshape(state, [1, 4])
+for time_t in range(500):
+    # turn this on if you want to render
+    # env.render()
+    # Decide action
+    action = agent.act(state)
+    # Advance the game to the next frame based on the action.
+    # Reward is 1 for every frame the pole survived
+    next_state, reward, done, _ = env.step(action)
+    next_state = np.reshape(next_state, [1, 4])
+    # Remember the previous state, action, reward, and done
+    # make next_state the new current state for the next frame.
+    state = next_state
+    # done becomes True when the game ends
+    # ex) The agent drops the pole
+    if done:
+        # print the score and break out of the loop
+        print("score: {}"
+              .format(time_t))
+        break
+
+env.close()

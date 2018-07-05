@@ -4,22 +4,24 @@ import tensorflow as tf
 from tensorflow.python import keras
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Dense
+import os
+os.chdir('/home/jovyan/work/RL-stuff/cartpole')
 
 
-# env = gym.make('CartPole-v0')
-# env = gym.wrappers.Monitor(env, 'tmp/cartpole-experiment-1', force=True)
-# observation = env.reset()
-# for t in range(100):
-#     #env.render()
-#     #print(observation)
-#     action = env.action_space.sample()
-#     observation, reward, done, info = env.step(action)
-#     if done:
-#         #observation = env.reset()
-#         print("Episode finished after {} timesteps".format(t+1))
-#         break
-#
-# env.close()
+env = gym.make('CartPole-v0')
+env = gym.wrappers.Monitor(env, 'tmp/cartpole-experiment-1', force=True)
+observation = env.reset()
+for t in range(100):
+    #env.render()
+    #print(observation)
+    action = env.action_space.sample()
+    observation, reward, done, info = env.step(action)
+    if done:
+        #observation = env.reset()
+        print("Episode finished after {} timesteps".format(t+1))
+        break
+
+env.close()
 
 class Agent:
     def __init__(self, env, Qmod, algo="sarsa1", lr=0.1, dr=0.9, eps=0.1):
