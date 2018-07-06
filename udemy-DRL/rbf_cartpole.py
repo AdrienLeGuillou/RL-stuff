@@ -110,7 +110,7 @@ def plot_running_avg(total_rewards):
     plt.show()
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     env = gym.make('CartPole-v0')
     ft = Feature_transformer(env)
     bot = Agent(env, ft)
@@ -134,6 +134,3 @@ if __name__ == "main":
     play_one(bot, 0, gamma)
 
     env.close()
-
-sgd = SGDRegressor(3)
-sgd.predict(np.array([1, 2, 3]).reshape((1, -1)))

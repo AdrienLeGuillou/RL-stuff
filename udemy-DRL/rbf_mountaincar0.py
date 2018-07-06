@@ -36,6 +36,7 @@ class Feature_transformer:
 
         return self.transformer.transform(observation)
 
+
 class Agent:
     def __init__(self, env, feature_transformer, learning_rate):
         self.env = env
@@ -96,7 +97,7 @@ def plot_running_avg(total_rewards):
     plt.show()
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     env = gym.make('MountainCar-v0')
     ft = Feature_transformer(env)
     bot = Agent(env, ft, 'constant')
